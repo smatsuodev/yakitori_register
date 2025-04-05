@@ -51,8 +51,13 @@ class OrderViewModel extends ChangeNotifier {
       _orderItems.removeAt(existingItemIndex);
     }
 
-    // 合計金額再計算
     _calculateTotal();
+    notifyListeners();
+  }
+
+  void clearCart() {
+    orderItems.clear();
+    _totalAmount = 0;
     notifyListeners();
   }
 

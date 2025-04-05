@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../data/repository/product_repository.dart';
 import '../view_model/order_view_model.dart';
 import 'order_summary_widget.dart';
+import 'payment_dialog.dart';
 import 'product_selection_widget.dart';
 
 class OrderScreen extends StatelessWidget {
@@ -43,7 +44,7 @@ class OrderScreen extends StatelessWidget {
               ],
             ),
             floatingActionButton: FloatingActionButton.extended(
-              onPressed: () {
+              onPressed: () async {
                 if (!orderViewModel.hasItems) {
                   ScaffoldMessenger.of(
                     context,
@@ -53,13 +54,19 @@ class OrderScreen extends StatelessWidget {
                   ));
                   return;
                 }
-                // TODO: 支払い画面へ遷移
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(
-                  content: Text('支払い画面へ遷移します'),
-                  showCloseIcon: true,
-                ));
+
+                final result = await showDialog<bool>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => PaymentDialog(
+                    orderItems: orderViewModel.orderItems,
+                    totalAmount: orderViewModel.totalAmount,
+                  ),
+                );
+
+                if (result == true) {
+                  orderViewModel.clearCart();
+                }
               },
               label: const Text('支払いへ進む'),
               icon: const Icon(Icons.payment),

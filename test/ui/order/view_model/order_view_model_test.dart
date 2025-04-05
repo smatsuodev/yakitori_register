@@ -110,4 +110,47 @@ void main() {
       expect(orderViewModel.hasItems, false);
     });
   });
+
+  group('カートクリアのテスト', () {
+    final product1 = Product(id: '1', name: 'もも 甘口', price: 100);
+    final product2 = Product(id: '2', name: 'もも 中辛', price: 120);
+
+    test('clearCartを呼び出すと注文リストが空になること', () {
+      // 商品をカートに追加
+      orderViewModel.addProduct(product1);
+      orderViewModel.addProduct(product2);
+      expect(orderViewModel.orderItems.length, 2);
+
+      // カートをクリア
+      orderViewModel.clearCart();
+
+      // 検証
+      expect(orderViewModel.orderItems, isEmpty);
+    });
+
+    test('clearCart後は合計金額が0になること', () {
+      // 商品をカートに追加
+      orderViewModel.addProduct(product1);
+      orderViewModel.addProduct(product2);
+      expect(orderViewModel.totalAmount, 220);
+
+      // カートをクリア
+      orderViewModel.clearCart();
+
+      // 検証
+      expect(orderViewModel.totalAmount, 0);
+    });
+
+    test('clearCart後はhasItemsがfalseになること', () {
+      // 商品をカートに追加
+      orderViewModel.addProduct(product1);
+      expect(orderViewModel.hasItems, true);
+
+      // カートをクリア
+      orderViewModel.clearCart();
+
+      // 検証
+      expect(orderViewModel.hasItems, false);
+    });
+  });
 }

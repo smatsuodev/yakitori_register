@@ -152,12 +152,11 @@ void main() {
       expect(find.text('商品を選択してください'), findsOneWidget);
     });
 
-    testWidgets('会計後に注文管理ダイアログで注文の反映を確認するテスト', (WidgetTester tester) async {
+    testWidgets('提供完了までのフローを確認するテスト', (WidgetTester tester) async {
       setUpScreenSize(tester);
 
-      // リポジトリの初期状態を記録
+      // リポジトリの準備
       final orderHistoryRepository = OrderHistoryRepository();
-      final initialOrders = orderHistoryRepository.getOrders().length;
 
       // OrderScreenをビルド
       await tester.pumpWidget(
@@ -193,42 +192,58 @@ void main() {
       await tester.tap(find.byIcon(Icons.receipt_long));
       await tester.pumpAndSettle();
 
-      // 6. ダイアログ表示確認
-      expect(find.text('注文管理'), findsOneWidget);
+      // 6. 未提供の注文タブを確認
+      expect(find.text('未提供の注文'), findsOneWidget);
+      expect(find.textContaining('注文 #'), findsOneWidget);
 
-      // 7. すべての注文タブに切り替え
+      // 7. 注文カードを展開
+      final orderCards = find.byType(ExpansionTile);
+      expect(orderCards, findsWidgets);
+      await tester.tap(orderCards.first);
+      await tester.pumpAndSettle();
+
+      // 8. チェックボックスが表示されていることを確認
+      final checkboxes = find.byType(Checkbox);
+      expect(checkboxes, findsWidgets);
+
+      // 9. すべて提供完了ボタンが存在することを確認
+      final completeButton = find.text('すべて提供完了');
+      expect(completeButton, findsOneWidget);
+
+      // 10. すべて提供完了ボタンをタップ
+      await tester.tap(completeButton);
+      await tester.pumpAndSettle();
+
+      // 11. 提供完了後の確認 - 注文リストが空になったことを確認
+      // ExpansionTileが消えているか確認
+      expect(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.byType(ExpansionTile),
+          ),
+          findsNothing);
+
+      // 空の状態を示すテキストを確認
+      expect(find.text('表示する注文がありません'), findsOneWidget);
+
+      // 12. すべての注文タブに切り替え
       await tester.tap(find.text('すべての注文'));
       await tester.pumpAndSettle();
 
-      // 8. 注文が追加されたことを確認
-      final currentOrders = orderHistoryRepository.getOrders().length;
-      expect(currentOrders, greaterThan(initialOrders));
-
-      // 9. 新しい注文が表示されていることを確認
+      // 13. 注文が存在することを確認
       expect(find.textContaining('注文 #'), findsAtLeastNWidgets(1));
 
-      // 10. 注文カードをインタラクティブに見つけてタップ
-      final orderCards = find.descendant(
-        of: find.byType(ListView),
-        matching: find.byType(InkWell),
-      );
-
-      if (orderCards.evaluate().isNotEmpty) {
-        await tester.tap(orderCards.first);
+      // 注文カードを展開
+      final allOrderCards = find.byType(ExpansionTile);
+      if (allOrderCards.evaluate().isNotEmpty) {
+        await tester.tap(allOrderCards.first);
         await tester.pumpAndSettle();
+
+        // 提供完了状態を確認
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
       }
 
-      // 11. 注文が展開されているかを確認（どちらかが存在すればOK）
-      final hasCompleteButton = find.text('すべて提供完了').evaluate().isNotEmpty;
-      final hasCheckboxes = find.byType(Checkbox).evaluate().isNotEmpty;
-
-      expect(
-        hasCompleteButton || hasCheckboxes,
-        isTrue,
-        reason: '注文カードが展開されていません',
-      );
-
-      // 12. ダイアログを閉じる
+      // 14. ダイアログを閉じる
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
     });

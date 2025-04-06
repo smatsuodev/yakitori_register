@@ -4,13 +4,6 @@ import '../../domain/model/order_history_item.dart';
 import '../../domain/model/order_item.dart';
 
 class OrderHistoryRepository {
-  static final OrderHistoryRepository _instance =
-      OrderHistoryRepository._internal();
-
-  factory OrderHistoryRepository() => _instance;
-
-  OrderHistoryRepository._internal();
-
   final List<OrderHistoryItem> _orders = [];
   final _uuid = const Uuid();
 

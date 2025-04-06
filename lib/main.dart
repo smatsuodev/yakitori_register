@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'data/repository/order_history_repository.dart';
+import 'data/repository/product_repository.dart';
 import 'ui/order/widget/order_screen.dart';
 
 void main() {
@@ -35,7 +37,10 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: OrderScreen(),
+      home: OrderScreen(
+        productRepository: ProductRepository(),
+        orderHistoryRepository: OrderHistoryRepository(),
+      ),
     );
   }
 }

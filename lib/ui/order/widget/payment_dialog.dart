@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/repository/order_history_repository.dart';
 import '../../../domain/model/order_item.dart';
 import '../view_model/payment_view_model.dart';
 
 class PaymentDialog extends StatefulWidget {
   final List<OrderItem> orderItems;
   final int totalAmount;
+  final OrderHistoryRepository _orderHistoryRepository;
 
   const PaymentDialog({
     super.key,
     required this.orderItems,
     required this.totalAmount,
-  });
+    required OrderHistoryRepository orderHistoryRepository,
+  }) : _orderHistoryRepository = orderHistoryRepository;
 
   @override
   State<PaymentDialog> createState() => _PaymentDialogState();
@@ -30,6 +33,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
         create: (_) => PaymentViewModel(
           orderItems: widget.orderItems,
           totalAmount: widget.totalAmount,
+          orderHistoryRepository: widget._orderHistoryRepository,
         ),
         builder: (context, _) => ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(16)),
@@ -175,6 +179,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         child: ElevatedButton(
                           onPressed: paymentViewModel.isValidPayment
                               ? () {
+                                  paymentViewModel.completeOrder();
                                   setState(() {
                                     _isCompleted = true;
                                   });

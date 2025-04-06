@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:yakitori_register/data/repository/order_history_repository.dart';
 
 import '../../../data/repository/product_repository.dart';
 import '../view_model/order_view_model.dart';
+import 'order_management_dialog.dart';
 import 'order_summary_widget.dart';
 import 'payment_dialog.dart';
 import 'product_selection_widget.dart';
 
 class OrderScreen extends StatelessWidget {
-  final ProductRepository productRepository;
+  final ProductRepository _productRepository;
+  final OrderHistoryRepository _orderHistoryRepository;
 
-  OrderScreen({super.key, ProductRepository? productRepository})
-      : productRepository = productRepository ?? ProductRepository();
+  const OrderScreen({
+    super.key,
+    required ProductRepository productRepository,
+    required OrderHistoryRepository orderHistoryRepository,
+  })  : _productRepository = productRepository,
+        _orderHistoryRepository = orderHistoryRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +27,26 @@ class OrderScreen extends StatelessWidget {
       child: Builder(
         builder: (context) {
           final orderViewModel = Provider.of<OrderViewModel>(context);
-          final products = productRepository.getProducts();
+          final products = _productRepository.getProducts();
 
           return Scaffold(
-            appBar: AppBar(title: const Text('注文入力')),
+            appBar: AppBar(
+              title: const Text('注文入力'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.receipt_long),
+                  tooltip: '注文管理',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => OrderManagementDialog(
+                        orderHistoryRepository: _orderHistoryRepository,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
             body: Row(
               children: [
                 Expanded(
@@ -46,9 +69,7 @@ class OrderScreen extends StatelessWidget {
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () async {
                 if (!orderViewModel.hasItems) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('商品を選択してください'),
                     showCloseIcon: true,
                   ));
@@ -61,6 +82,7 @@ class OrderScreen extends StatelessWidget {
                   builder: (context) => PaymentDialog(
                     orderItems: orderViewModel.orderItems,
                     totalAmount: orderViewModel.totalAmount,
+                    orderHistoryRepository: _orderHistoryRepository,
                   ),
                 );
 

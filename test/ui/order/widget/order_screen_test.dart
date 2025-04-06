@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yakitori_register/data/repository/order_history_repository.dart';
 import 'package:yakitori_register/data/repository/product_repository.dart';
 import 'package:yakitori_register/domain/model/product.dart';
 import 'package:yakitori_register/ui/order/widget/order_screen.dart';
@@ -18,17 +19,22 @@ class MockProductRepository extends ProductRepository {
 
 void main() {
   group('OrderScreen UIテスト', () {
-    testWidgets('基本操作のテスト', (WidgetTester tester) async {
-      // 画面サイズを大きめに設定
+    // テスト実行前に共通の画面サイズを設定する関数
+    void setUpScreenSize(WidgetTester tester) {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.reset());
+    }
+
+    testWidgets('基本操作のテスト', (WidgetTester tester) async {
+      setUpScreenSize(tester);
 
       // OrderScreenをビルド
       await tester.pumpWidget(
         MaterialApp(
           home: OrderScreen(
             productRepository: MockProductRepository(),
+            orderHistoryRepository: OrderHistoryRepository(),
           ),
         ),
       );
@@ -86,16 +92,14 @@ void main() {
     });
 
     testWidgets('注文完了フローのテスト', (WidgetTester tester) async {
-      // 画面サイズを設定
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.reset());
+      setUpScreenSize(tester);
 
       // OrderScreenをビルド
       await tester.pumpWidget(
         MaterialApp(
           home: OrderScreen(
             productRepository: MockProductRepository(),
+            orderHistoryRepository: OrderHistoryRepository(),
           ),
         ),
       );
@@ -146,6 +150,87 @@ void main() {
       // 注文画面に戻り、カートがクリアされていることを確認
       expect(find.text('注文入力'), findsOneWidget);
       expect(find.text('商品を選択してください'), findsOneWidget);
+    });
+
+    testWidgets('会計後に注文管理ダイアログで注文の反映を確認するテスト', (WidgetTester tester) async {
+      setUpScreenSize(tester);
+
+      // リポジトリの初期状態を記録
+      final orderHistoryRepository = OrderHistoryRepository();
+      final initialOrders = orderHistoryRepository.getOrders().length;
+
+      // OrderScreenをビルド
+      await tester.pumpWidget(
+        MaterialApp(
+          home: OrderScreen(
+            productRepository: MockProductRepository(),
+            orderHistoryRepository: orderHistoryRepository,
+          ),
+        ),
+      );
+
+      // 1. 商品を選択
+      await tester.tap(find.text('もも 塩'));
+      await tester.pump();
+      await tester.tap(find.text('ねぎま'));
+      await tester.pump();
+
+      // 2. 支払いへ進む
+      await tester.tap(find.text('支払いへ進む'));
+      await tester.pumpAndSettle();
+
+      // 3. 金額入力と会計処理
+      await tester.tap(find.text('¥1,000'));
+      await tester.pump();
+      await tester.tap(find.text('会計する'));
+      await tester.pumpAndSettle();
+
+      // 4. 注文画面に戻る
+      await tester.tap(find.text('注文画面に戻る'));
+      await tester.pumpAndSettle();
+
+      // 5. 注文管理ダイアログを表示
+      await tester.tap(find.byIcon(Icons.receipt_long));
+      await tester.pumpAndSettle();
+
+      // 6. ダイアログ表示確認
+      expect(find.text('注文管理'), findsOneWidget);
+
+      // 7. すべての注文タブに切り替え
+      await tester.tap(find.text('すべての注文'));
+      await tester.pumpAndSettle();
+
+      // 8. 注文が追加されたことを確認
+      final currentOrders = orderHistoryRepository.getOrders().length;
+      expect(currentOrders, greaterThan(initialOrders));
+
+      // 9. 新しい注文が表示されていることを確認
+      expect(find.textContaining('注文 #'), findsAtLeastNWidgets(1));
+
+      // 10. 注文カードをインタラクティブに見つけてタップ
+      final orderCards = find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(InkWell),
+      );
+
+      if (orderCards.evaluate().isNotEmpty) {
+        await tester.tap(orderCards.first);
+        await tester.pumpAndSettle();
+      }
+
+      // 11. 注文が展開されているかを確認（どちらかが存在すればOK）
+      final hasCompleteButton = find.text('すべて提供完了').evaluate().isNotEmpty;
+      final hasCheckboxes = find.byType(Checkbox).evaluate().isNotEmpty;
+
+      expect(
+        hasCompleteButton || hasCheckboxes,
+        isTrue,
+        reason: '注文カードが展開されていません',
+      );
+
+      // 12. ダイアログを閉じる
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
     });
   });
 }

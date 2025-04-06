@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yakitori_register/data/repository/order_history_repository.dart';
 import 'package:yakitori_register/domain/model/order_item.dart';
 import 'package:yakitori_register/domain/model/product.dart';
 import 'package:yakitori_register/ui/order/view_model/payment_view_model.dart';
@@ -20,6 +21,7 @@ void main() {
     paymentViewModel = PaymentViewModel(
       orderItems: testOrderItems,
       totalAmount: testTotalAmount,
+      orderHistoryRepository: OrderHistoryRepository(),
     );
   });
 
